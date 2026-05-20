@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AXIS-Cosmos Universe Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1>AXIS-Cosmos Universe Demo</h1>
+      <p class="notice">Derived / non-canonical / local-only Cosmos archaeology demo.</p>
+    </header>
+    <section class="toolbar panel">
+      <label for="mode">View</label>
+      <select id="mode">
+        <option value="pdpn">PD#PN Graph</option>
+        <option value="concept">Concept Sample</option>
+      </select>
+      <label for="density">Render</label>
+      <select id="density">
+        <option value="100">Top 100</option>
+        <option value="260" selected>Top 260</option>
+        <option value="500">Top 500</option>
+        <option value="all">Full Graph (Experimental)</option>
+      </select>
+      <label for="search">Search</label>
+      <input id="search" type="text" placeholder="PD#PN or concept id">
+      <button id="reset" type="button">Reset Layout</button>
+      <button id="pause" type="button">Pause Physics</button>
+      <button id="settle" type="button">Settle Now</button>
+      <button id="reheat" type="button">Reheat</button>
+      <button id="clear" type="button">Clear Selection</button>
+      <button id="focus" type="button">Focus Universe</button>
+      <button id="panel-toggle" type="button">Hide Panel</button>
+      <label for="autosettle">
+        <input id="autosettle" type="checkbox" checked>
+        Auto-settle
+      </label>
+      <span id="energy" class="energy">alpha: --</span>
+    </section>
+    <div class="universe-grid">
+      <section class="panel canvas-panel">
+        <canvas id="universe" aria-label="Cosmos universe graph"></canvas>
+      </section>
+      <section class="panel side-panel" id="side-panel">
+        <h2>Universe Stats</h2>
+        <ul id="stats"></ul>
+        <h2>Node Detail</h2>
+        <div id="detail">Click a node to inspect details.</div>
+        <h2>Path Samples</h2>
+        <ul id="paths"></ul>
+      </section>
+    </div>
+    <details class="panel sources-panel">
+      <summary>Source Fixtures</summary>
+      <h2>Source Fixtures</h2>
+      <ul>
+        <li>fixtures/zibaldone/cosmos_graph.json</li>
+        <li>fixtures/zibaldone/cosmos_paths.json</li>
+        <li>fixtures/zibaldone/Grafo_Metricas.csv</li>
+        <li>fixtures/zibaldone/Grafo_Conexoes_PDPN.csv</li>
+      </ul>
+    </details>
+  </main>
+  <script src="data/axis_cosmos_universe.js"></script>
+  <script src="demo.js"></script>
+</body>
+</html>

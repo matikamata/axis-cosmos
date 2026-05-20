@@ -1,0 +1,53 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Environments
+.env
+.env.*
+*.env
+.venv/
+venv/
+env/
+
+# JS / web build junk
+node_modules/
+dist/
+build/
+.next/
+
+# Deploy/service folders
+.netlify/
+.vercel/
+.cloudflare/
+
+# Local tooling metadata
+.idea/
+.vscode/
+
+# Backups / dumps / SQL
+*.sql
+*.dump
+*.bak
+*backup*
+*tenweb_backup_db.sql*
+
+# Sensitive credential-like files
+*credentials*.json
+*secret*
+*token*
+*api_key*
+*wp-config.php*
