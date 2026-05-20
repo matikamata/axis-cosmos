@@ -15,11 +15,7 @@ from typing import Any
 
 ANALYZER_NAME = "AXIS-Cosmos COPY_BATCH_001 read-only analyzer skeleton"
 ANALYZER_VERSION = "0.4.0"
-EXPECTED_ROOT = Path("/home/sanghop/axis/axis-cosmos-lab").resolve()
-PRODUCTION = Path("/home/sanghop/axis/axis-niddhi-production").resolve()
-PUBLISHED = Path("/home/sanghop/axis/axis-niddhi-published").resolve()
-ANALYSIS_OUTPUT_ROOT = EXPECTED_ROOT / "outputs/analysis"
-DEFAULT_INVENTORY = ANALYSIS_OUTPUT_ROOT / "COPY_BATCH_001_FIXTURE_INVENTORY.md"
+EXPECTED_ROOT_NAME = "axis-cosmos-lab"
 
 DERIVED_LABEL = (
     "This analysis is derived from COPY_BATCH_001 rescue fixtures. "
@@ -59,24 +55,39 @@ def is_relative_to(path: Path, parent: Path) -> bool:
         return False
 
 
-def unsafe_path(path: Path) -> bool:
+def protected_paths(root: Path) -> tuple[Path, Path]:
+    parent = root.parent.resolve()
+    return (parent / "axis-niddhi-production").resolve(), (parent / "axis-niddhi-published").resolve()
+
+
+def unsafe_path(path: Path, root: Path) -> bool:
+    production, published = protected_paths(root)
     resolved = path.resolve()
-    return is_relative_to(resolved, PRODUCTION) or is_relative_to(resolved, PUBLISHED)
+    return is_relative_to(resolved, production) or is_relative_to(resolved, published)
 
 
 def require_safe_root(root: Path) -> None:
-    if root != EXPECTED_ROOT:
-        raise ValueError(f"--root must resolve to {EXPECTED_ROOT}; got {root}")
+    if root.name != EXPECTED_ROOT_NAME:
+        raise ValueError(f"--root directory name must be {EXPECTED_ROOT_NAME}; got {root.name}")
     if "axis-niddhi-production" in root.parts or "axis-niddhi-published" in root.parts:
         raise ValueError("--root resolves inside a protected path")
-    if unsafe_path(root):
+    if unsafe_path(root, root):
         raise ValueError("--root resolves inside production/published")
 
 
 def require_safe_report(report: Path) -> None:
-    if not is_relative_to(report, ANALYSIS_OUTPUT_ROOT):
-        raise ValueError(f"--report must resolve under {ANALYSIS_OUTPUT_ROOT}; got {report}")
-    if unsafe_path(report):
+    # We still enforce target under <root>/outputs/analysis at call sites; this function validates safety and scope.
+    if "outputs/analysis" not in str(report):
+        raise ValueError("report path must include outputs/analysis")
+    root = report
+    while root.name and root.name != EXPECTED_ROOT_NAME:
+        root = root.parent
+    if root.name != EXPECTED_ROOT_NAME:
+        raise ValueError(f"Unable to infer {EXPECTED_ROOT_NAME} from report path: {report}")
+    expected = (root / "outputs/analysis").resolve()
+    if not is_relative_to(report, expected):
+        raise ValueError(f"--report must resolve under {expected}; got {report}")
+    if unsafe_path(report, root):
         raise ValueError("--report resolves inside production/published")
 
 
@@ -167,7 +178,7 @@ def inspect_file(root: Path, label: str, rel: Path, required: bool) -> Finding:
     path = (root / rel).resolve()
     if not is_relative_to(path, root):
         raise ValueError(f"Forbidden path outside root: {path}")
-    if unsafe_path(path):
+    if unsafe_path(path, root):
         raise ValueError(f"Forbidden protected path: {path}")
     if not path.exists():
         status = "WARN" if not required else "FAIL"
@@ -222,7 +233,7 @@ def inspect_validation_reports(root: Path) -> list[Finding]:
     directory = (root / VALIDATION_DIR).resolve()
     if not directory.exists():
         return [Finding("validation_reports", directory, "WARN", warnings=["outputs/validation missing"], required=False)]
-    if not is_relative_to(directory, root) or unsafe_path(directory):
+    if not is_relative_to(directory, root) or unsafe_path(directory, root):
         raise ValueError(f"Forbidden validation report directory: {directory}")
     reports = sorted(directory.glob("*.md"))
     facts = [f"validation_report_count={len(reports)}"]
@@ -459,7 +470,8 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
     root = Path(args.root).expanduser().resolve()
     report = Path(args.report).expanduser().resolve() if args.report else None
-    inventory_path = Path(args.inventory_path).expanduser().resolve() if args.inventory_path else DEFAULT_INVENTORY.resolve()
+    default_inventory = (root / "outputs/analysis/COPY_BATCH_001_FIXTURE_INVENTORY.md").resolve()
+    inventory_path = Path(args.inventory_path).expanduser().resolve() if args.inventory_path else default_inventory
     if report is not None:
         require_safe_report(report)
     if args.inventory:

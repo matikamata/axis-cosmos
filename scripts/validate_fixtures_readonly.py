@@ -18,9 +18,7 @@ from typing import Any
 VALIDATOR_NAME = "AXIS-Cosmos COPY_BATCH_001 read-only fixture validator"
 VALIDATOR_VERSION = "0.1.1"
 
-EXPECTED_ROOT = Path("/home/sanghop/axis/axis-cosmos-lab").resolve()
-PRODUCTION = Path("/home/sanghop/axis/axis-niddhi-production").resolve()
-PUBLISHED = Path("/home/sanghop/axis/axis-niddhi-published").resolve()
+EXPECTED_ROOT_NAME = "axis-cosmos-lab"
 
 FORBIDDEN_PATTERNS = [
     "tenweb_backup_db.sql",
@@ -132,6 +130,11 @@ def contains_marker(normalized_text: str, marker: str) -> bool:
     return marker_norm in normalized_text
 
 
+def protected_paths(root: Path) -> tuple[Path, Path]:
+    parent = root.parent.resolve()
+    return (parent / "axis-niddhi-production").resolve(), (parent / "axis-niddhi-published").resolve()
+
+
 def scan_forbidden(result: FileResult, text: str, *, allow_local_paths: bool) -> None:
     for pattern in FORBIDDEN_PATTERNS:
         if pattern not in text:
@@ -149,19 +152,20 @@ def scan_forbidden(result: FileResult, text: str, *, allow_local_paths: bool) ->
 
 def validate_path_safety(root: Path, report: Path | None) -> list[FileResult]:
     result = FileResult("path_safety", root)
-    if root != EXPECTED_ROOT:
-        result.add("BLOCKED", f"Root must resolve to {EXPECTED_ROOT}; got {root}")
+    production, published = protected_paths(root)
+    if root.name != EXPECTED_ROOT_NAME:
+        result.add("BLOCKED", f"Root directory must be named {EXPECTED_ROOT_NAME}; got {root.name}")
         return [result]
-    if root == PRODUCTION or root == PUBLISHED or is_relative_to(root, PRODUCTION) or is_relative_to(root, PUBLISHED):
+    if root == production or root == published or is_relative_to(root, production) or is_relative_to(root, published):
         result.add("BLOCKED", "Root points into a protected production/published path")
         return [result]
-    result.add("PASS", "Root path is the expected axis-cosmos-lab")
+    result.add("PASS", f"Root path accepted: {root}")
 
     for label, rel in TARGETS.items():
         target = (root / rel).resolve()
         if not is_relative_to(target, root):
             result.add("BLOCKED", f"{label} resolves outside lab root: {target}")
-        if is_relative_to(target, PRODUCTION) or is_relative_to(target, PUBLISHED):
+        if is_relative_to(target, production) or is_relative_to(target, published):
             result.add("BLOCKED", f"{label} resolves into protected path: {target}")
         if not target.exists():
             result.add("BLOCKED", f"Required target missing: {target}")
@@ -428,13 +432,14 @@ def render_report(root: Path, results: list[FileResult]) -> str:
 
 
 def run(root: Path, report: Path | None) -> tuple[int, str]:
+    production, published = protected_paths(root)
     if report is not None:
         expected_report_root = (root / "outputs/validation").resolve()
         if not is_relative_to(report, expected_report_root):
             blocked = FileResult("path_safety", root)
             blocked.add("BLOCKED", f"Report path must be inside {expected_report_root}; got {report}")
             return 2, render_report(root, [blocked])
-        if is_relative_to(report, PRODUCTION) or is_relative_to(report, PUBLISHED):
+        if is_relative_to(report, production) or is_relative_to(report, published):
             blocked = FileResult("path_safety", root)
             blocked.add("BLOCKED", f"Report path resolves into protected path: {report}")
             return 2, render_report(root, [blocked])
@@ -475,11 +480,12 @@ def main(argv: list[str]) -> int:
     root = Path(args.root).expanduser().resolve()
     report = Path(args.report).expanduser().resolve() if args.report else None
     status, output = run(root, report)
+    production, published = protected_paths(root)
     if report is not None:
         expected_report_root = (root / "outputs/validation").resolve()
         if not is_relative_to(report, expected_report_root):
             raise SystemExit(f"Refusing report write outside {expected_report_root}: {report}")
-        if is_relative_to(report, PRODUCTION) or is_relative_to(report, PUBLISHED):
+        if is_relative_to(report, production) or is_relative_to(report, published):
             raise SystemExit(f"Refusing report write to protected path: {report}")
         report.write_text(output, encoding="utf-8")
     summary_lines = []
