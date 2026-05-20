@@ -10,6 +10,11 @@ Experimental, derived, non-canonical research lab.
 - Not a deploy surface.
 - Not connected to production or published pipelines.
 
+## World Bee Day Note
+
+AXIS-Cosmos became public on World Bee Day, 20 May 2026.  
+A short dedication is preserved in `docs/WORLD_BEE_DAY_20260520.md`.
+
 ## Position In AXIS
 
 ```text
